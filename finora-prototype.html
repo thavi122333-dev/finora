@@ -1,0 +1,145 @@
+gleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#F6F5FB;--card:#FFFFFF;--ink:#17163A;--mut:#65648A;--line:#E4E2F1;--pri:#5B3FFF;--priInk:#FFFFFF;--soft:#ECE8FF;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121127;--card:#1C1B38;--ink:#F1F0FF;--mut:#A3A2C4;--line:#2E2C52;--pri:#8B75FF;--priInk:#121127;--soft:#2A2652}}
+:root[data-theme="dark"]{--bg:#121127;--card:#1C1B38;--ink:#F1F0FF;--mut:#A3A2C4;--line:#2E2C52;--pri:#8B75FF;--priInk:#121127;--soft:#2A2652}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.5 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.disp,.big{font-family:'Bricolage Grotesque','DM Sans',sans-serif;letter-spacing:-.02em}
+h1{font-size:36px;line-height:1.1}h2{font-size:22px}h3{font-size:17px}
+.app{max-width:440px;margin:0 auto;padding:18px 18px 100px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-top:14px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mut{color:var(--mut);font-size:14px}
+.btn{border:0;border-radius:14px;padding:14px 18px;font:700 16px 'DM Sans',sans-serif;background:var(--pri);color:var(--priInk);cursor:pointer;width:100%}
+.btn.g{background:var(--soft);color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
+.chip{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:10px 14px;font:500 15px 'DM Sans',sans-serif;cursor:pointer;margin:0 8px 8px 0}
+.chip.on{background:var(--pri);color:var(--priInk);border-color:var(--pri)}
+.bar{display:flex;height:12px;border-radius:99px;overflow:hidden;background:var(--line);margin:12px 0 8px}.bar i{display:block}
+.moods{display:flex;justify-content:space-between;margin-top:16px}
+.mood{background:none;border:0;color:var(--ink);font:500 13px 'DM Sans',sans-serif;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px}
+.mood span{width:52px;height:52px;border-radius:50%;display:block;transition:transform .15s}
+.mood:active span{transform:scale(.88)}
+.big{font-size:52px;font-weight:700;line-height:1}
+.pill{background:var(--soft);border-radius:99px;padding:6px 12px;font-size:14px;font-weight:500;display:inline-block}
+.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:var(--card);border-top:1px solid var(--line);display:flex;gap:4px;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px))}
+.tab{flex:1;border:0;background:none;color:var(--mut);font:500 14px 'DM Sans',sans-serif;padding:10px;border-radius:12px;cursor:pointer}.tab.on{color:var(--pri);font-weight:700;background:var(--soft)}
+.msg{padding:10px 14px;border-radius:16px;max-width:85%;margin-top:8px;width:fit-content}.me{background:var(--pri);color:var(--priInk);margin-left:auto}.ai{background:var(--soft)}
+input{width:100%;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:13px;font:16px 'DM Sans',sans-serif}
+.li{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}.li:last-child{border:0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+#toast{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:14px;font-size:14px;max-width:90%;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<div id="toast" role="status"></div><div id="app" class="app"></div><nav id="nav" class="tabs" aria-label="Main"></nav>
+<script>
+const $=s=>document.querySelector(s);
+const fmt=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const BANDS=['Under ₹15k','₹15–30k','₹30–60k','₹60k+'],BASE=[30,70,150,300];
+const GOALS={'Emergency fund':15000,'Wealth building':25000,'Big purchase':12000};
+const MOODS=[['Happy','#FFC93C'],['Neutral','#9AA0B4'],['Stressed','#FF6B57'],['Excited','#FF5FA2'],['Cautious','#3FA7FF']];
+const MC=Object.fromEntries(MOODS);
+const ASSETS=['Stocks','ETFs','Gold','Bonds'],ACOL=['#5B3FFF','#14B8A6','#F59E0B','#94A3B8'];
+const MIX=[[5,20,30,45],[15,35,25,25],[30,40,20,10]],LVL=['Low','Medium','High'];
+const RQ=[['A 10% drop in a week. You would…',['Sell to stay safe','Wait it out','Buy more']],['You would rather grow money…',['Slowly and safely','With a balance','Faster, with bumps']]];
+const SP=[['Chai',47,0],['Metro ride',26,0],['Swiggy order',343,1],['Sneakers',1799,1]];
+const init=()=>({step:0,tab:'home',day:1,mood:null,sug:null,status:null,lastActed:0,streak:0,wallet:4200,hold:[0,0,0,0],log:[],spends:[],payout:0,payoutDay:0,ms:{},trace:false,sc:false,user:null,ob:{name:'',band:1,goal:'Emergency fund',risk:[-1,-1]},chat:[{r:'ai',t:'Hi! Ask me about today\'s suggestion, your goal, or how investing works. I explain and automate. I do not give personalised investment advice.'}]});
+let S=init(),tt;
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2800)};
+const tot=()=>S.hold.reduce((a,b)=>a+b,0);
+const bar=m=>`<div class="bar">${m.map((p,i)=>`<i style="width:${p}%;background:${ACOL[i]}"></i>`).join('')}</div>`;
+const legend=m=>`<p class="mut">${m.map((p,i)=>`<span class="dot" style="background:${ACOL[i]}"></span>${ASSETS[i]} ${Math.round(p)}%`).join('&nbsp;&nbsp; ')}</p>`;
+const chip=(a,v,l,on,x='')=>`<button class="chip${on?' on':''}" data-a="${a}" data-v="${v}" ${x}>${l}</button>`;
+function shift(x,n){let t=Math.min(n,x[0]);x[0]-=t;const e=Math.min(n-t,x[1]);x[1]-=e;t+=e;x[3]+=Math.ceil(t/2);x[2]+=Math.floor(t/2);return x}
+function calc(){const u=S.user,m=S.mood;let base=BASE[u.band],note=false;
+const want=S.spends.filter(x=>x.want&&x.day===S.day).reduce((a,x)=>a+x.amt,0);
+if(S.payout&&S.payoutDay===S.day){base=Math.max(base,Math.round(S.payout*.08));note=true}
+const imp=want>base*4;
+const k={Happy:1,Neutral:.8,Stressed:.5,Excited:imp?.8:1.3,Cautious:.6}[m];
+const amt=Math.max(10,Math.round(base*k/10)*10);
+let mix=MIX[u.lvl].slice();
+if(m==='Stressed'||m==='Cautious')shift(mix,15);
+if(u.goal==='Emergency fund')shift(mix,10);
+const tone={Happy:`You're in a good mood, so today's ${fmt(amt)} follows your normal pace`,Neutral:`It's a steady day, so I'm suggesting a moderate ${fmt(amt)}`,Stressed:`You're stressed, so I'm keeping it small at ${fmt(amt)} and leaning toward bonds and gold`,Excited:imp?`You're excited but already spent ${fmt(want)} on wants today, so I'm holding at ${fmt(amt)} instead of going bigger`:`You're excited and your spending has been calm, so I'm stepping up to ${fmt(amt)}`,Cautious:`You're feeling cautious, so I'm suggesting a smaller ${fmt(amt)} in steadier assets`}[m];
+return{amt,mix,why:tone+(note?', sized from your recent payout':'')+` toward your ${u.goal.toLowerCase()}.`,
+f:[['Mood',m],['Spent on wants today',fmt(want)+(imp?' (high)':'')],['Income',BANDS[u.band]+(note?' + payout':'')],['Goal',u.goal],['Risk comfort',LVL[u.lvl]],['Streak',S.streak+' days']]}}
+function act(){if(S.lastActed!==S.day){S.streak=S.lastActed===S.day-1?S.streak+1:1;S.lastActed=S.day}}
+function chk(){const t=tot();[['m1',t>=1000,'First ₹1,000 invested'],['m2',S.streak>=7,'First 7-day streak'],['m3',t>=GOALS[S.user.goal],'First goal hit']].forEach(([k,c,l])=>{if(c&&!S.ms[k]){S.ms[k]=S.day;toast('Milestone unlocked: '+l)}})}
+function invest(a,mix,kind){mix.forEach((p,i)=>S.hold[i]+=a*p/100);S.wallet=Math.max(0,S.wallet-a);S.log.unshift({day:S.day,amt:a,kind});act();chk()}
+function spend(n,a,w){const ru=(10-a%10)%10;S.wallet=Math.max(0,S.wallet-a-ru);S.spends.unshift({n,amt:a,want:w,day:S.day});
+if(ru){MIX[S.user.lvl].forEach((p,i)=>S.hold[i]+=ru*p/100);S.log.unshift({day:S.day,amt:ru,kind:'Round-up on '+n});act();chk()}
+toast(ru?`Paid ${fmt(a)} on ${n}. Round-up of ${fmt(ru)} invested.`:`Paid ${fmt(a)} on ${n}. No spare change to round up.`)}
+function nextDay(){S.day++;S.mood=null;S.sug=null;S.status=null;S.trace=false;if(S.streak&&S.lastActed<S.day-1){S.streak=0;toast('Streak reset. Start a new one today.')}}
+function demoWeek(){const m=['Happy','Neutral','Excited','Neutral','Cautious','Happy','Neutral'];for(let i=0;i<7;i++){nextDay();S.mood=m[i];const c=calc();S.sug=c;S.status='done';invest(c.amt,c.mix,'Daily suggestion')}toast('Simulated 7 days of following suggestions')}
+function fin(){const o=S.ob,r=o.risk[0]+o.risk[1];S.user={name:o.name.trim()||'Friend',band:o.band,goal:o.goal,lvl:r<=1?0:r<=3?1:2};S.step=5;S.tab='home';toast('Welcome to Finora')}
+function reply(q){q=q.toLowerCase();const t=tot(),u=S.user,c=S.status?S.sug:(S.mood?calc():null);
+if(/why/.test(q))return c?c.why:'Check in with your mood on Home first, then I can explain the suggestion.';
+if(/how much|today|invest now/.test(q))return c?`Today's suggestion is ${fmt(c.amt)}, split ${ASSETS.map((a,i)=>c.mix[i]+'% '+a.toLowerCase()).join(', ')}. You can skip it with one tap.`:'Check in with your mood on Home and I will size today\'s amount from your mood, spending and goal.';
+if(/goal|progress|doing/.test(q))return `You have ${fmt(t)} invested toward your ${u.goal.toLowerCase()} target of ${fmt(GOALS[u.goal])}. That is ${Math.min(100,Math.round(t/GOALS[u.goal]*100))}% of the way.`;
+if(/streak/.test(q))return `Your streak is ${S.streak} day${S.streak===1?'':'s'}. Following a suggestion or a round-up counts as a positive action.`;
+if(/etf/.test(q))return 'An ETF is a basket of many stocks you buy as one unit, so one weak company hurts less.';
+if(/bond/.test(q))return 'A bond is a loan to a government or company that pays you interest. It moves less than stocks.';
+if(/gold/.test(q))return 'Gold tends to hold its value when markets are shaky, so it steadies a portfolio.';
+if(/stock|share/.test(q))return 'A stock is a small ownership slice of one company. It can grow more but swings more.';
+if(/round/.test(q))return 'Round-ups take the spare change from each UPI payment, like ₹3 on a ₹47 chai, and invest it for you.';
+return 'I can explain today\'s suggestion, say how much to invest, check your goal and streak, or explain ETFs, bonds, gold and round-ups.'}
+const ask=q=>{S.chat.push({r:'me',t:q},{r:'ai',t:reply(q)});S.sc=true};
+function onboard(){const o=S.ob,s=S.step;
+let h=`<div class="row"><b class="disp" style="font-size:22px">Finora</b><span class="mut">${s>0?'Step '+s+' of 4':''}</span></div>`;
+if(s===0)h+=`<h1 style="margin-top:56px">Money that adapts to you.</h1><p class="mut" style="margin:14px 0 32px;font-size:17px">Save, spend and invest in one place. Get one clear action every day, sized to your mood and your real spending.</p><button class="btn" data-a="next">Get started</button><button class="btn g" style="margin-top:10px" data-a="demo">Try a demo profile</button>`;
+if(s===1)h+=`<h2 style="margin-top:32px">What should we call you?</h2><input id="nm" placeholder="Your first name" value="${esc(o.name)}" autocomplete="off" style="margin-top:12px"><h3 style="margin:24px 0 6px">Monthly income</h3><p class="mut" style="margin-bottom:12px">A range is enough. If it varies, pick your average.</p>${BANDS.map((b,i)=>chip('band',i,b,o.band===i)).join('')}<button class="btn" style="margin-top:20px" data-a="next">Continue</button>`;
+if(s===2)h+=`<h2 style="margin:32px 0 12px">What are you saving for?</h2>${Object.keys(GOALS).map(g=>chip('goal',g,g,o.goal===g)).join('')}<p class="mut">Target: ${fmt(GOALS[o.goal])}</p><button class="btn" style="margin-top:20px" data-a="next">Continue</button>`;
+if(s===3)h+=`<h2 style="margin:32px 0 4px">Two quick questions</h2><p class="mut">No forms, no jargon.</p>${RQ.map((q,i)=>`<h3 style="margin:20px 0 10px">${q[0]}</h3>${q[1].map((l,j)=>chip('risk',j,l,o.risk[i]===j,`data-q="${i}"`)).join('')}`).join('')}<button class="btn" style="margin-top:20px" data-a="next">Continue</button>`;
+if(s===4)h+=`<h2 style="margin:32px 0 12px">Link your accounts</h2><div class="card" style="margin:0 0 20px"><p>Finora reads your UPI transactions through the RBI Account Aggregator framework. You approve access, and Finora never sees or stores your bank credentials.</p>${o.linked?'<p class="pill" style="margin-top:12px">Linked (simulated)</p>':''}</div>${o.linked?'<button class="btn" data-a="finish">Open my dashboard</button>':'<button class="btn" data-a="link">Approve and link (simulated)</button>'}`;
+return h}
+function home(){const u=S.user,t=tot(),g=GOALS[u.goal];
+let h=`<div class="row"><div><p class="mut">Day ${S.day}</p><h2>Hi ${esc(u.name)}</h2></div><span class="pill">${S.streak} day streak</span></div>`;
+if(!S.mood)h+=`<div class="card"><h3>How are you feeling today?</h3><p class="mut">Your answer shapes today's suggestion.</p><div class="moods">${MOODS.map(([n,c])=>`<button class="mood" data-a="mood" data-v="${n}"><span style="background:${c}"></span>${n}</button>`).join('')}</div></div>`;
+else{const done=!!S.status,c=done?S.sug:calc();
+h+=`<div class="card" style="border-top:6px solid ${MC[S.mood]}"><div class="row"><span class="mut">Feeling ${S.mood.toLowerCase()}</span>${done?'':'<button class="chip" style="margin:0" data-a="remood">Change</button>'}</div>
+<p class="mut" style="margin-top:8px">${S.status==='done'?'Invested today':S.status==='skipped'?'Skipped today':'Today\'s suggestion'}</p><p class="big" style="margin-top:4px">${fmt(c.amt)}</p>${bar(c.mix)}${legend(c.mix)}<p style="margin-top:12px">${c.why}</p>
+${done?`<p class="pill" style="margin-top:14px">${S.status==='done'?'Done for today. Streak updated.':'Any round-up today still keeps your streak.'}</p>`:`<div class="row" style="margin-top:16px"><button class="btn" data-a="accept">Invest ${fmt(c.amt)}</button><button class="btn g" style="width:auto" data-a="skip">Skip</button></div>`}
+<button class="chip" style="margin:14px 0 0" data-a="trace">How was this decided?</button>${S.trace?c.f.map(x=>`<div class="li"><span class="mut">${x[0]}</span><b>${esc(x[1])}</b></div>`).join(''):''}</div>`}
+h+=`<div class="card"><div class="row"><h3>${u.goal}</h3><span class="mut">${fmt(t)} of ${fmt(g)}</span></div>${bar([Math.min(100,t/g*100)]).replace('background:#5B3FFF','background:var(--pri)')}</div>`;
+return h}
+function folio(){const t=tot(),u=S.user,g=GOALS[u.goal],pm=t?S.hold.map(x=>x/t*100):[0,0,0,0];
+const M=[['m1','First ₹1,000 invested'],['m2','First 7-day streak'],['m3','First goal hit']];
+return `<h2>Portfolio</h2><div class="card"><p class="mut">Total invested</p><p class="big" style="margin-top:4px">${fmt(t)}</p><p class="mut" style="margin-top:8px">${Math.min(100,Math.round(t/g*100))}% of your ${u.goal.toLowerCase()} target</p></div>
+<div class="card"><h3>Where it sits</h3>${bar(pm)}${S.hold.map((x,i)=>`<div class="li"><span><span class="dot" style="background:${ACOL[i]}"></span>${ASSETS[i]}</span><b>${fmt(x)}</b></div>`).join('')}<button class="btn g" style="margin-top:12px" data-a="add">Add ₹1,000</button></div>
+<div class="card"><h3>Milestones</h3>${M.map(([k,l])=>`<div class="li"><span>${l}</span><span class="${S.ms[k]?'pill':'mut'}">${S.ms[k]?'Unlocked, day '+S.ms[k]:'Locked'}</span></div>`).join('')}</div>
+<div class="card"><h3>Recent investments</h3>${S.log.length?S.log.slice(0,6).map(l=>`<div class="li"><span>${esc(l.kind)}<br><span class="mut">Day ${l.day}</span></span><b>${fmt(l.amt)}</b></div>`).join(''):'<p class="mut">Nothing yet. Take today\'s suggestion or make a payment in Activity.</p>'}</div>`}
+function chatv(){return `<h2>Ask Finora</h2><div>${S.chat.map(m=>`<div class="msg ${m.r}">${esc(m.t)}</div>`).join('')}</div><div style="margin-top:14px">${['How much should I invest today?','Why did you suggest this?','How am I doing on my goal?','What is an ETF?'].map(q=>chip('q',q,q,0)).join('')}</div><div class="row" style="margin-top:6px"><input id="ci" placeholder="Ask anything about your money" autocomplete="off" aria-label="Message"><button class="btn" style="width:auto" data-a="send">Send</button></div>`}
+function activity(){return `<h2>Activity</h2><div class="card"><p class="mut">UPI balance (simulated)</p><p class="big" style="margin-top:4px">${fmt(S.wallet)}</p></div>
+<div class="card"><h3>Make a payment</h3><p class="mut" style="margin-bottom:10px">Spare change is rounded up and invested.</p>${SP.map((p,i)=>chip('spend',i,`${p[0]} ${fmt(p[1])}`,0)).join('')}<h3 style="margin:10px 0 6px">Get paid</h3><p class="mut" style="margin-bottom:10px">Finora detects irregular income and resizes today's suggestion.</p><button class="btn g" data-a="payout">Receive ₹6,000 freelance payout</button></div>
+<div class="card"><h3>Demo controls</h3><div class="row" style="margin-top:10px"><button class="btn g" data-a="day">Next day</button><button class="btn g" data-a="week">Simulate a week</button></div><button class="chip" style="margin:12px 0 0" data-a="reset">Start over</button></div>
+<div class="card"><h3>Recent payments</h3>${S.spends.length?S.spends.slice(0,5).map(x=>`<div class="li"><span>${x.n}<br><span class="mut">Day ${x.day}</span></span><b>${fmt(x.amt)}</b></div>`).join(''):'<p class="mut">No payments yet.</p>'}</div>`}
+function render(){const u=S.user;
+if(!u){$('#nav').innerHTML='';$('#app').innerHTML=onboard();return}
+$('#nav').innerHTML=[['home','Home'],['folio','Portfolio'],['chat','Chat'],['act','Activity']].map(([k,l])=>`<button class="tab${S.tab===k?' on':''}" data-a="tab" data-v="${k}">${l}</button>`).join('');
+$('#app').innerHTML={home,folio,chat:chatv,act:activity}[S.tab]();
+if(S.sc){S.sc=false;const i=$('#ci');if(i)i.focus();window.scrollTo(0,document.body.scrollHeight)}}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,v=b.dataset.v,o=S.ob;
+switch(a){
+case'next':if(S.step===1&&!o.name.trim()){toast('Add your name to continue');return}if(S.step===3&&o.risk.includes(-1)){toast('Answer both questions to continue');return}S.step++;break;
+case'band':o.band=+v;break;case'goal':o.goal=v;break;case'risk':o.risk[+b.dataset.q]=+v;break;
+case'demo':S.ob={name:'Asha',band:1,goal:'Emergency fund',risk:[1,1]};fin();break;
+case'link':o.linked=true;break;case'finish':fin();break;
+case'tab':S.tab=v;break;case'mood':S.mood=v;break;case'remood':S.mood=null;break;
+case'accept':{const c=calc();S.sug=c;S.status='done';invest(c.amt,c.mix,'Daily suggestion');toast('Invested '+fmt(c.amt)+'. Streak: '+S.streak+' day'+(S.streak===1?'':'s'));break}
+case'skip':S.sug=calc();S.status='skipped';break;
+case'trace':S.trace=!S.trace;break;
+case'spend':{const p=SP[+v];spend(p[0],p[1],p[2]);break}
+case'payout':S.payout=6000;S.payoutDay=S.day;S.wallet+=6000;toast('Payout of ₹6,000 detected. Today\'s suggestion will adjust.');break;
+case'add':if(S.wallet<1000){toast('Not enough balance. Receive a payout in Activity.');return}invest(1000,MIX[S.user.lvl],'Lump sum');toast('Added ₹1,000 to your portfolio');break;
+case'week':demoWeek();break;case'day':nextDay();break;
+case'reset':S=init();break;
+case'q':ask(v);break;case'send':{const i=$('#ci'),q=i.value.trim();if(!q)return;ask(q);break}
+}
+render()});
+document.addEventListener('input',e=>{if(e.target.id==='nm')S.ob.name=e.target.value});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='ci'){const q=e.target.value.trim();if(q){ask(q);render()}}});
+render();
+</script></body></html>
